@@ -9,7 +9,7 @@ export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ?? 'postgres://haruleaf:haruleaf@localhost:5433/haruleaf_test';
 
 /** 실수로 개발 DB를 비우지 않도록 테스트 DB(이름이 _test로 끝남)만 허용한다. */
-function assertTestDatabase(url: string): void {
+export function assertTestDatabase(url: string): void {
   if (!new URL(url).pathname.endsWith('_test')) {
     throw new Error(
       `테스트는 이름이 _test로 끝나는 데이터베이스에서만 실행할 수 있습니다. TEST_DATABASE_URL을 확인하세요: ${url.replace(/\/\/[^@]*@/, '//***@')}`,

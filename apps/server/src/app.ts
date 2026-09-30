@@ -17,13 +17,17 @@ export type AppDeps = {
   clock: Clock;
   corsOrigins: string[];
   logger?: boolean;
+  logStream?: { write(message: string): void };
 };
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
+  const loggerOptions = { redact: ['req.headers.authorization', 'req.body.password', 'req.body.body'] };
   const app = Fastify({
-    logger: deps.logger
-      ? { redact: ['req.headers.authorization', 'req.body.password', 'req.body.body'] }
-      : false,
+    logger: deps.logStream
+      ? { ...loggerOptions, stream: deps.logStream }
+      : deps.logger
+        ? loggerOptions
+        : false,
   });
 
   await app.register(cors, {
