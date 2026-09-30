@@ -8,6 +8,7 @@ node_modules/
 # editors / OS
 .DS_Store
 .idea/
+.playwright-mcp/
 
 # build / cache
 dist/

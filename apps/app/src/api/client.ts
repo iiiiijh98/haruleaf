@@ -70,7 +70,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!response.ok) {
     const error = (data as ApiErrorBody | null)?.error;
     const code = error?.code ?? 'UNKNOWN';
-    if (response.status === 401 && usesSessionToken && token && code === 'UNAUTHORIZED') unauthorizedHandler?.();
+    // 요청에 쓴 토큰이 아직 현재 세션 토큰일 때만 로그아웃한다.
+    // 이전 세션의 늦은 401이 재로그인한 새 세션을 서버에서 폐기하는 것을 막는다.
+    if (response.status === 401 && usesSessionToken && token && token === authToken && code === 'UNAUTHORIZED') {
+      unauthorizedHandler?.();
+    }
     throw new ApiError(code, error?.message ?? '요청을 처리하지 못했어요.', response.status);
   }
   return data as T;
