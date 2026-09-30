@@ -123,3 +123,31 @@ export async function logout(db: Db, auth: AuthContext, meta: ClientMeta, now = 
     await recordEvent(tx, 'LOGOUT', auth.loginId, auth.userId, meta);
   });
 }
+
+const unauthorized = () => new AppError('UNAUTHORIZED', '다시 로그인해주세요.', 401);
+
+export async function getUser(db: Db, userId: string): Promise<User> {
+  const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!row) throw unauthorized();
+  return toUser(row);
+}
+
+export async function updateNickname(db: Db, userId: string, nickname: string, now = new Date()): Promise<User> {
+  const [row] = await db.update(users).set({ nickname, updatedAt: now }).where(eq(users.id, userId)).returning();
+  if (!row) throw unauthorized();
+  return toUser(row);
+}
+
+/** 비밀번호 재확인 후 계정을 지운다. 연결된 데이터는 FK CASCADE로 함께 삭제된다. */
+export async function deleteAccount(db: Db, userId: string, password: string): Promise<void> {
+  const [credential] = await db
+    .select({ passwordHash: userCredentials.passwordHash })
+    .from(userCredentials)
+    .where(eq(userCredentials.userId, userId))
+    .limit(1);
+  if (!credential) throw unauthorized();
+  if (!(await verifyPassword(password, credential.passwordHash))) {
+    throw new AppError('INVALID_PASSWORD', '비밀번호가 올바르지 않습니다.', 401);
+  }
+  await db.delete(users).where(eq(users.id, userId));
+}

@@ -7,6 +7,7 @@ import { AppError, registerErrorHandlers } from './lib/errors';
 import { createRequireAuth } from './plugins/auth';
 import { authRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
+import { meRoutes } from './routes/me';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -55,6 +56,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   const requireAuth = createRequireAuth(deps.db);
   await app.register(authRoutes, { db: deps.db, requireAuth });
+  await app.register(meRoutes, { db: deps.db, requireAuth });
 
   return app;
 }
