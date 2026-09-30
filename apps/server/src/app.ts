@@ -4,6 +4,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { Db } from './db/client';
 import type { Clock } from './lib/clock';
 import { AppError, registerErrorHandlers } from './lib/errors';
+import { createRequireAuth } from './plugins/auth';
+import { authRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
 
 declare module 'fastify' {
@@ -39,6 +41,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   registerErrorHandlers(app);
 
   app.decorateRequest('platform', 'web');
+  app.decorateRequest('auth', null);
   app.addHook('onRequest', async (request) => {
     if (request.method === 'OPTIONS') return;
     const parsed = platformSchema.safeParse(request.headers[PLATFORM_HEADER]);
@@ -49,6 +52,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
 
   await app.register(healthRoutes, { db: deps.db, clock: deps.clock });
+
+  const requireAuth = createRequireAuth(deps.db);
+  await app.register(authRoutes, { db: deps.db, requireAuth });
 
   return app;
 }
