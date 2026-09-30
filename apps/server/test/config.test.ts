@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { DEFAULT_DATABASE_URL, loadConfig } from '../src/config';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import { DEFAULT_DATABASE_URL, loadConfig, loadRootEnv } from '../src/config';
 
 describe('loadConfig', () => {
   it('값이 없으면 기본값을 쓴다', () => {
@@ -30,5 +33,30 @@ describe('loadConfig', () => {
     [{ TZ_NAME: 'Not/AZone' }],
   ])('잘못된 값 %j는 오류', (env) => {
     expect(() => loadConfig(env)).toThrow('환경변수 설정이 올바르지 않습니다');
+  });
+});
+
+describe('loadRootEnv', () => {
+  const KEYS = ['HL_TEST_UNSET', 'HL_TEST_SET'];
+  afterEach(() => {
+    for (const key of KEYS) delete process.env[key];
+  });
+
+  it('설정되지 않은 변수만 채우고 이미 있는 값은 덮어쓰지 않는다', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'haruleaf-env-'));
+    try {
+      const file = join(dir, '.env');
+      writeFileSync(file, 'HL_TEST_UNSET=from-file\nHL_TEST_SET=from-file\n');
+      process.env.HL_TEST_SET = 'from-env';
+      loadRootEnv(file);
+      expect(process.env.HL_TEST_UNSET).toBe('from-file');
+      expect(process.env.HL_TEST_SET).toBe('from-env');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('파일이 없으면 아무것도 하지 않는다', () => {
+    expect(() => loadRootEnv(join(tmpdir(), 'haruleaf-no-such-dir', '.env'))).not.toThrow();
   });
 });

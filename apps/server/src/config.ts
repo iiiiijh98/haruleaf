@@ -1,6 +1,15 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 export const DEFAULT_DATABASE_URL = 'postgres://haruleaf:haruleaf@localhost:5433/haruleaf';
+
+const ROOT_ENV_PATH = fileURLToPath(new URL('../../../.env', import.meta.url));
+
+/** 루트 .env가 있으면 읽는다(이미 설정된 환경변수는 덮어쓰지 않음). */
+export function loadRootEnv(path: string = ROOT_ENV_PATH): void {
+  if (existsSync(path)) process.loadEnvFile(path);
+}
 
 const isValidTimeZone = (value: string) => {
   try {

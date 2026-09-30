@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { pathToFileURL } from 'node:url';
-import { loadConfig } from '../config';
+import { loadConfig, loadRootEnv } from '../config';
 import { createDb, type Db } from './client';
 import { plants } from './schema';
 import { CATALOG } from './seed-data';
@@ -25,6 +25,7 @@ export async function seedCatalog(db: Db): Promise<void> {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  loadRootEnv();
   const { db, pool } = createDb(loadConfig().databaseUrl);
   try {
     await seedCatalog(db);

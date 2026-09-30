@@ -8,7 +8,7 @@
 
 ## 준비물
 
-- Node.js 20 이상, npm
+- Node.js 22.12 이상 (24 LTS 권장), npm
 - Docker Desktop (PostgreSQL 실행용)
 - Xcode + iOS 시뮬레이터 (iOS 확인 시)
 - 실제 아이폰으로 볼 때: App Store의 **Expo Go**

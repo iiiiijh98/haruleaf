@@ -2,6 +2,7 @@
   "name": "haruleaf",
   "private": true,
   "version": "0.1.0",
+  "engines": { "node": ">=22.12" },
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "db:up": "docker compose up -d --wait",

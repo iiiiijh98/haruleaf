@@ -1,15 +1,30 @@
 import { sql } from 'drizzle-orm';
+import { loadRootEnv } from '../src/config';
 import { createDb, type Db } from '../src/db/client';
+
+// global-setup과 테스트 파일 모두 이 모듈을 거치므로 같은 URL을 본다.
+loadRootEnv();
 
 export const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ?? 'postgres://haruleaf:haruleaf@localhost:5433/haruleaf_test';
 
+/** 실수로 개발 DB를 비우지 않도록 테스트 DB(이름이 _test로 끝남)만 허용한다. */
+function assertTestDatabase(url: string): void {
+  if (!new URL(url).pathname.endsWith('_test')) {
+    throw new Error(
+      `테스트는 이름이 _test로 끝나는 데이터베이스에서만 실행할 수 있습니다. TEST_DATABASE_URL을 확인하세요: ${url.replace(/\/\/[^@]*@/, '//***@')}`,
+    );
+  }
+}
+
 export function createTestDb() {
+  assertTestDatabase(TEST_DATABASE_URL);
   return createDb(TEST_DATABASE_URL);
 }
 
 /** 모든 테이블을 비운다(시드 포함). */
 export async function resetDatabase(db: Db): Promise<void> {
+  assertTestDatabase(TEST_DATABASE_URL);
   await db.execute(sql`
     truncate table coin_transactions, monthly_records, diaries, user_plants,
       auth_events, sessions, user_credentials, users, plants
