@@ -25,7 +25,8 @@
 
 - 회원가입 화면은 명세서 UI-01대로 입력칸 3개만 두고, 비밀번호 칸에 보기/숨기기 토글을 둔다(비밀번호 확인 칸 없음).
 - DB 제약(아이디 3~30자, 닉네임 30자 이하)은 그대로 두고, 더 좁은 규칙은 shared 스키마가 강제한다.
-- 로그인 요청의 비밀번호는 형식 규칙을 검사하지 않는다(길이 1~64만 확인) — 규칙이 바뀌어도 기존 계정이 로그인할 수 있게.
+- 로그인 요청의 아이디·비밀번호는 형식 규칙을 검사하지 않는다(아이디 1~100자, 비밀번호 1~64자만 확인) — 규칙이 바뀌어도 기존 계정이 로그인할 수 있게. 실패 기록에는 아이디 앞 30자만 저장한다.
+- 탈퇴 시 비밀번호 불일치(`INVALID_PASSWORD`)도 401이지만, 앱은 `UNAUTHORIZED` 코드일 때만 자동 로그아웃한다.
 
 ## 2. 선행 작업
 
@@ -45,7 +46,7 @@
 ```ts
 loginIdSchema, passwordSchema, nicknameSchema
 signupSchema        = { loginId, password, nickname }
-loginSchema         = { loginId: loginIdInput(trim+lowercase, 1~30자), password: string 1~64 }
+loginSchema         = { loginId: string(trim+lowercase, 1~100자 — 형식 규칙 미적용), password: string 1~64 }
 updateNicknameSchema = { nickname }
 deleteAccountSchema = { password: string 1~64 }
 
