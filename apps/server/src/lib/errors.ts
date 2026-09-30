@@ -1,6 +1,5 @@
-import type { ApiErrorBody } from '@haruleaf/shared';
+import { z, type ApiErrorBody } from '@haruleaf/shared';
 import type { FastifyError, FastifyInstance, FastifyReply } from 'fastify';
-import { ZodError } from 'zod';
 
 export class AppError extends Error {
   constructor(
@@ -18,20 +17,12 @@ function send(reply: FastifyReply, status: number, code: string, message: string
   return reply.status(status).send(body);
 }
 
-// @haruleaf/shared가 자체 zod 사본을 쓸 수 있어 instanceof만으로는 놓친다.
-function isZodError(error: unknown): error is ZodError {
-  return (
-    error instanceof ZodError ||
-    (error instanceof Error && error.name === 'ZodError' && Array.isArray((error as { issues?: unknown }).issues))
-  );
-}
-
 export function registerErrorHandlers(app: FastifyInstance): void {
   app.setErrorHandler((error: FastifyError | Error, request, reply) => {
     if (error instanceof AppError) {
       return send(reply, error.status, error.code, error.message);
     }
-    if (isZodError(error)) {
+    if (error instanceof z.ZodError) {
       return send(reply, 400, 'VALIDATION_ERROR', error.issues[0]?.message ?? '입력값을 확인해주세요.');
     }
     const status = 'statusCode' in error ? error.statusCode : undefined;

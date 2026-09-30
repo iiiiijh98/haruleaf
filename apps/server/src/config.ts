@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { z } from 'zod';
+import { z } from '@haruleaf/shared';
 
 export const DEFAULT_DATABASE_URL = 'postgres://haruleaf:haruleaf@localhost:5433/haruleaf';
 
