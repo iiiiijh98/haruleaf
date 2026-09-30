@@ -6,13 +6,13 @@
   "scripts": {
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
-    "db:generate": "npm run db:generate -w @haruleaf/server",
+    "db:generate": "npm run db:generate -w @haruleaf/server --",
     "db:migrate": "npm run db:migrate -w @haruleaf/server",
     "db:seed": "npm run db:seed -w @haruleaf/server",
     "dev": "node scripts/dev.mjs",
     "dev:server": "npm run dev -w @haruleaf/server",
     "dev:app": "npm run start -w @haruleaf/app",
-    "test": "npm run test --workspaces --if-present && node --test scripts/",
+    "test": "npm run test --workspaces --if-present && node --test scripts/*.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint -w @haruleaf/app"
   }
