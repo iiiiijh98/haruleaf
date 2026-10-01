@@ -1,6 +1,8 @@
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+import { expect } from 'vitest';
 import { loadRootEnv } from '../src/config';
 import { createDb, type Db } from '../src/db/client';
+import { coinTransactions, users } from '../src/db/schema';
 
 // global-setup과 테스트 파일 모두 이 모듈을 거치므로 같은 URL을 본다.
 loadRootEnv();
@@ -48,4 +50,14 @@ export async function expectPgError(promise: Promise<unknown>, code: string): Pr
     throw new Error(`pg 오류 ${code}를 기대했지만 다른 오류가 났습니다: ${String(error)}`);
   }
   throw new Error(`pg 오류 ${code}를 기대했지만 성공했습니다.`);
+}
+
+/** 원장 불변식: 사용자의 coin_transactions 합계 = users.coin_balance. */
+export async function expectLedgerMatchesBalance(db: Db, userId: string): Promise<void> {
+  const [ledger] = await db
+    .select({ total: sql<number>`coalesce(sum(${coinTransactions.amount}), 0)::int` })
+    .from(coinTransactions)
+    .where(eq(coinTransactions.userId, userId));
+  const [user] = await db.select({ coinBalance: users.coinBalance }).from(users).where(eq(users.id, userId));
+  expect(ledger!.total).toBe(user!.coinBalance);
 }

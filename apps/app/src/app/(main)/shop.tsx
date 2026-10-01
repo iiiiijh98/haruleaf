@@ -36,6 +36,8 @@ function ShopContent() {
       reload();
     } catch (error) {
       setBuyError(error instanceof ApiError ? error.message : '구매하지 못했어요.');
+      // 다른 기기에서 이미 샀거나 코인을 쓴 경우: 카드와 잔액을 서버 기준으로 맞춘다.
+      if (error instanceof ApiError && error.status === 409) reload();
     } finally {
       setBuying(false);
     }

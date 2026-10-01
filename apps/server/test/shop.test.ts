@@ -7,7 +7,7 @@ import { seedCatalog } from '../src/db/seed';
 import { grantCoins } from '../src/domain/coins';
 import { bearer } from './auth-helpers';
 import { fireConcurrently } from './concurrency';
-import { createTestDb, resetDatabase } from './helpers';
+import { createTestDb, expectLedgerMatchesBalance, resetDatabase } from './helpers';
 import { mutableClock, signupUser } from './months-helpers';
 
 const { db, pool } = createTestDb();
@@ -57,6 +57,7 @@ describe('POST /shop/purchase', () => {
     expect(response.statusCode).toBe(409);
     expect(response.json()).toEqual({ error: { code: 'INSUFFICIENT_COINS', message: '코인이 부족해요.' } });
     expect(await balanceOf(userId)).toBe(49);
+    await expectLedgerMatchesBalance(db, userId);
     expect(await db.select().from(userPlants).where(and(eq(userPlants.userId, userId), eq(userPlants.plantId, 'moonflower')))).toHaveLength(0);
   });
 
@@ -74,6 +75,7 @@ describe('POST /shop/purchase', () => {
     const purchases = await db.select().from(coinTransactions).where(and(eq(coinTransactions.userId, userId), eq(coinTransactions.type, 'PURCHASE')));
     expect(purchases).toEqual([expect.objectContaining({ amount: -50, referenceKey: 'moonflower' })]);
     expect((await shop(token)).items[0].owned).toBe(true);
+    await expectLedgerMatchesBalance(db, userId);
   });
 
   it('산 식물을 이번 달 식물로 고를 수 있다', async () => {
@@ -113,13 +115,21 @@ describe('POST /shop/purchase', () => {
     const results = await fireConcurrently(2, () => buy(token, 'moonflower'));
     expect(results.map((result) => result.statusCode).sort()).toEqual([200, 409]);
     expect(await balanceOf(userId)).toBe(150);
+    await expectLedgerMatchesBalance(db, userId);
   });
 
-  it('잔액이 딱 두 식물 값일 때 두 식물을 동시에 사면 둘 다 성공', async () => {
+  it('잔액 100에서 50짜리와 100짜리를 동시에 사면 하나만 성공하고 잔액이 음수가 되지 않는다', async () => {
     const { token, userId } = await signupUser(app);
-    await grantCoins(db, 'haru_01', 150);
-    const results = await Promise.all([buy(token, 'moonflower'), buy(token, 'anthurium')]);
-    expect(results.map((result) => result.statusCode)).toEqual([200, 200]);
-    expect(await balanceOf(userId)).toBe(0);
+    await grantCoins(db, 'haru_01', 100);
+    const plantIds = ['moonflower', 'anthurium'];
+    const results = await Promise.all(plantIds.map((plantId) => buy(token, plantId)));
+    expect(results.map((result) => result.statusCode).sort()).toEqual([200, 409]);
+    const failed = results.find((result) => result.statusCode === 409)!;
+    expect(failed.json().error.code).toBe('INSUFFICIENT_COINS');
+    const winner = plantIds[results.findIndex((result) => result.statusCode === 200)]!;
+    expect(await balanceOf(userId)).toBe(winner === 'moonflower' ? 50 : 0);
+    const owned = await db.select().from(userPlants).where(and(eq(userPlants.userId, userId), eq(userPlants.unlockSource, 'SHOP')));
+    expect(owned.map((row) => row.plantId)).toEqual([winner]);
+    await expectLedgerMatchesBalance(db, userId);
   });
 });

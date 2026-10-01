@@ -7,7 +7,7 @@ import { seedCatalog } from '../src/db/seed';
 import { grantCoins } from '../src/domain/coins';
 import { bearer } from './auth-helpers';
 import { fireConcurrently } from './concurrency';
-import { createTestDb, resetDatabase } from './helpers';
+import { createTestDb, expectLedgerMatchesBalance, resetDatabase } from './helpers';
 import { mutableClock, signupUser } from './months-helpers';
 
 const { db, pool } = createTestDb();
@@ -46,15 +46,17 @@ describe('POST /attendance', () => {
     const snapshot = await home(token);
     expect(snapshot.coinBalance).toBe(5);
     expect(snapshot.attendedToday).toBe(true);
+    await expectLedgerMatchesBalance(db, userId);
   });
 
   it('같은 날 두 번째는 409이고 잔액은 그대로', async () => {
-    const { token } = await signupUser(app);
+    const { token, userId } = await signupUser(app);
     await attend(token);
     const again = await attend(token);
     expect(again.statusCode).toBe(409);
     expect(again.json()).toEqual({ error: { code: 'ALREADY_ATTENDED', message: '오늘은 이미 출석했어요.' } });
     expect((await home(token)).coinBalance).toBe(5);
+    await expectLedgerMatchesBalance(db, userId);
   });
 
   it('동시에 10번 눌러도 한 번만 지급', async () => {
@@ -64,6 +66,9 @@ describe('POST /attendance', () => {
     expect(results.filter((result) => result.statusCode === 409)).toHaveLength(9);
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     expect(user!.coinBalance).toBe(5);
+    const ledgerRows = await db.select().from(coinTransactions).where(eq(coinTransactions.userId, userId));
+    expect(ledgerRows).toHaveLength(1);
+    await expectLedgerMatchesBalance(db, userId);
   });
 
   it('날짜가 바뀌면 다시 출석할 수 있다', async () => {
@@ -102,6 +107,7 @@ describe('grantCoins', () => {
     const [entry] = await db.select().from(coinTransactions).where(eq(coinTransactions.userId, userId));
     expect(entry).toMatchObject({ type: 'ADJUSTMENT', amount: 120 });
     expect(entry!.referenceKey).toMatch(/^adj:[0-9a-f]{32}$/);
+    await expectLedgerMatchesBalance(db, userId);
   });
 
   it('여러 번 지급할 수 있다', async () => {
