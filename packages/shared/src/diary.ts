@@ -18,7 +18,13 @@ export const diaryInputSchema = z.object({ body: diaryBodySchema }, { error: FOR
 
 const PLANT_MESSAGE = '식물을 골라주세요.';
 export const selectPlantSchema = z.object(
-  { plantId: z.string({ error: PLANT_MESSAGE }).min(1, PLANT_MESSAGE).max(40, PLANT_MESSAGE) },
+  {
+    plantId: z
+      .string({ error: PLANT_MESSAGE })
+      .min(1, PLANT_MESSAGE)
+      .max(40, PLANT_MESSAGE)
+      .refine(hasNoNul, INVALID_CHARACTER_MESSAGE),
+  },
   { error: FORM_MESSAGE },
 );
 

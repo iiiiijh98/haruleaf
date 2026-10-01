@@ -6,6 +6,7 @@ import type { Clock } from './lib/clock';
 import { AppError, registerErrorHandlers } from './lib/errors';
 import { authRoutes, logoutRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
+import { homeRoutes } from './routes/home';
 import { meRoutes } from './routes/me';
 import { protectedRoutes } from './routes/protected';
 
@@ -55,7 +56,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(healthRoutes, { db: deps.db, clock: deps.clock });
 
   await app.register(authRoutes, { db: deps.db });
-  await app.register(protectedRoutes([logoutRoutes, meRoutes]), { db: deps.db, clock: deps.clock });
+  await app.register(protectedRoutes([logoutRoutes, meRoutes, homeRoutes]), { db: deps.db, clock: deps.clock });
 
   return app;
 }

@@ -32,6 +32,9 @@ describe('selectPlantSchema', () => {
     expect(selectPlantSchema.parse({ plantId: 'monstera' })).toEqual({ plantId: 'monstera' });
     expect(first(selectPlantSchema.safeParse({ plantId: '' }))).toBe('식물을 골라주세요.');
   });
+  it('NUL 문자는 거절한다', () => {
+    expect(first(selectPlantSchema.safeParse({ plantId: 'a\u0000' }))).toBe('사용할 수 없는 문자가 들어 있어요.');
+  });
 });
 
 describe('monthKeySchema · diaryDateSchema', () => {

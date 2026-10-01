@@ -2,6 +2,7 @@ import type { AuthResponse, LoginInput, SignupInput, User } from '@haruleaf/shar
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { authEvents, plants, sessions, userCredentials, userPlants, users } from '../db/schema';
+import { isUniqueViolation } from '../lib/db-errors';
 import { AppError, unauthorized } from '../lib/errors';
 import { dummyPasswordHash, hashPassword, verifyPassword } from '../lib/password';
 import type { ClientMeta } from '../lib/request-meta';
@@ -50,13 +51,6 @@ async function recordEvent(tx: Executor, event: AuthEvent, loginId: string, user
   });
 }
 
-function isLoginIdTaken(error: unknown): boolean {
-  const e = error as { code?: unknown; constraint?: unknown; cause?: { code?: unknown; constraint?: unknown } };
-  const code = e?.cause?.code ?? e?.code;
-  const constraint = e?.cause?.constraint ?? e?.constraint;
-  return code === '23505' && constraint === 'users_login_id_unique';
-}
-
 export async function signup(db: Db, input: SignupInput, meta: ClientMeta, now = new Date()): Promise<AuthResponse> {
   const passwordHash = await hashPassword(input.password);
   try {
@@ -81,7 +75,7 @@ export async function signup(db: Db, input: SignupInput, meta: ClientMeta, now =
       return { token, user: toUser(user) };
     });
   } catch (error) {
-    if (isLoginIdTaken(error)) throw new AppError('LOGIN_ID_TAKEN', '이미 사용 중인 아이디입니다.', 409);
+    if (isUniqueViolation(error, 'users_login_id_unique')) throw new AppError('LOGIN_ID_TAKEN', '이미 사용 중인 아이디입니다.', 409);
     throw error;
   }
 }
