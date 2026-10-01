@@ -18,6 +18,7 @@ export default function MainLayout() {
       <Tabs.Screen name="profile" options={{ title: '프로필' }} />
       <Tabs.Screen name="plants" options={{ href: null, title: '식물 고르기' }} />
       <Tabs.Screen name="entry/write" options={{ href: null, title: '일기 쓰기' }} />
+      <Tabs.Screen name="entry/edit/[date]" options={{ href: null, title: '일기 고치기' }} />
       <Tabs.Screen name="entry/[date]" options={{ href: null, title: '일기' }} />
     </Tabs>
   );

@@ -1,5 +1,5 @@
 import { formatMonthLabel, shiftMonth, type DiaryEntry } from '@haruleaf/shared';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { fetchDiaries } from '@/api/diary';
@@ -21,6 +21,8 @@ function dayLabel(date: string): string {
 export default function DiaryListScreen() {
   // null = 서버 기준 이번 달
   const [month, setMonth] = useState<string | null>(null);
+  // 탭은 마운트된 채 남으므로, 포커스를 잃을 때(cleanup) 이번 달로 되돌린다.
+  useFocusEffect(useCallback(() => () => setMonth(null), []));
   const load = useCallback(() => fetchDiaries(month ?? undefined), [month]);
   const { state, reload } = useRemoteData(load);
 

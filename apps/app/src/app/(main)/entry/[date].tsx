@@ -63,7 +63,7 @@ function DiaryDetailContent() {
           </View>
           {state.data.editable && (
             <>
-              <Button title="고치기" onPress={() => router.push(`/entry/write?date=${date}`)} />
+              <Button title="고치기" onPress={() => router.push(`/entry/edit/${date}`)} />
               <Button title="삭제" variant="danger" onPress={() => setConfirmOpen(true)} />
             </>
           )}
