@@ -8,6 +8,7 @@ import { authRoutes, logoutRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
 import { diaryRoutes } from './routes/diaries';
 import { coinRoutes } from './routes/coins';
+import { shopRoutes } from './routes/shop';
 import { homeRoutes } from './routes/home';
 import { meRoutes } from './routes/me';
 import { protectedRoutes } from './routes/protected';
@@ -59,7 +60,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(healthRoutes, { db: deps.db, clock: deps.clock });
 
   await app.register(authRoutes, { db: deps.db });
-  await app.register(protectedRoutes([logoutRoutes, meRoutes, homeRoutes, diaryRoutes, coinRoutes]), {
+  await app.register(protectedRoutes([logoutRoutes, meRoutes, homeRoutes, diaryRoutes, coinRoutes, shopRoutes]), {
     db: deps.db,
     clock: deps.clock,
     attendanceCoins: deps.attendanceCoins ?? 5,
