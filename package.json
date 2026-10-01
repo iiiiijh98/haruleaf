@@ -15,6 +15,7 @@
     "dev:app": "npm run start -w @haruleaf/app",
     "test": "npm run test --workspaces --if-present && node --test scripts/*.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "npm run lint -w @haruleaf/app"
+    "lint": "npm run lint -w @haruleaf/app",
+    "assets:placeholder-plants": "node scripts/generate-placeholder-plants.mjs"
   }
 }
