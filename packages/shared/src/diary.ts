@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { UnlockNotice } from './garden';
 import type { GrowthStage } from './growth';
 import { FORM_MESSAGE, hasNoNul, INVALID_CHARACTER_MESSAGE } from './text';
 
@@ -68,6 +69,10 @@ export type HomeResponse = MonthSnapshot & {
   todayDiary: boolean;
   coinBalance: number;
   attendedToday: boolean;
+  /** 마감으로 해금됐지만 아직 확인하지 않은 식물(월 오름차순) */
+  newUnlocks: UnlockNotice[];
+  /** 출석 1회 지급량 */
+  attendanceCoins: number;
 };
 
 export type DiaryEntry = { date: string; body: string; createdAt: string; updatedAt: string };

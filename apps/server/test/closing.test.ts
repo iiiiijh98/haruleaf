@@ -204,3 +204,63 @@ describe('마감된 달 스냅샷', () => {
     });
   });
 });
+
+const ack = (token: string, months: unknown) =>
+  app.inject({ method: 'POST', url: '/unlocks/ack', headers: bearer(token), payload: { months } });
+
+describe('해금 안내', () => {
+  it('마감으로 해금된 식물을 홈에 알린다', async () => {
+    const { token, userId } = await signupUser(app);
+    clock.set('2026-11-02');
+    await pastMonth(userId, '2026-10', 'rose', 25, 31);
+    expect((await home(token)).json().newUnlocks).toEqual([
+      { month: '2026-10', plant: { id: 'hydrangea', name: '수국', kind: 'FLOWER', catalogClass: 'STANDARD' } },
+    ]);
+  });
+
+  it('여러 달이면 월 순서대로', async () => {
+    const { token, userId } = await signupUser(app);
+    clock.set('2026-12-03');
+    await pastMonth(userId, '2026-10', 'rose', 25, 31);
+    await pastMonth(userId, '2026-11', 'tulip', 24, 30);
+    expect((await home(token)).json().newUnlocks.map((notice: { month: string }) => notice.month)).toEqual(['2026-10', '2026-11']);
+  });
+
+  it('확인하면 다시 알리지 않는다(다른 기기에서도)', async () => {
+    const { token, userId } = await signupUser(app);
+    clock.set('2026-11-02');
+    await pastMonth(userId, '2026-10', 'rose', 25, 31);
+    await home(token);
+    const response = await ack(token, ['2026-10']);
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ ok: true });
+    expect((await home(token)).json().newUnlocks).toEqual([]);
+    expect((await recordOf(userId, '2026-10')).unlockAcknowledgedAt).toBeInstanceOf(Date);
+  });
+
+  it('해금 없는 달·다른 사용자 달·이미 확인한 달은 무시한다', async () => {
+    const a = await signupUser(app, 'haru_01');
+    const b = await signupUser(app, 'haru_02');
+    clock.set('2026-11-02');
+    await pastMonth(b.userId, '2026-10', 'rose', 25, 31);
+    await home(b.token);
+    expect((await ack(a.token, ['2026-10', '2026-09'])).statusCode).toBe(200);
+    expect((await home(b.token)).json().newUnlocks).toHaveLength(1);
+    await ack(b.token, ['2026-10']);
+    const firstAck = (await recordOf(b.userId, '2026-10')).unlockAcknowledgedAt;
+    await ack(b.token, ['2026-10']);
+    expect((await recordOf(b.userId, '2026-10')).unlockAcknowledgedAt).toEqual(firstAck);
+  });
+
+  it.each([[[]], [['2026-9']], ['2026-10']])('잘못된 본문 %j 는 400', async (months) => {
+    const { token } = await signupUser(app);
+    const response = await ack(token, months);
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('출석 지급량을 홈에 싣는다', async () => {
+    const { token } = await signupUser(app);
+    expect((await home(token)).json().attendanceCoins).toBe(5);
+  });
+});

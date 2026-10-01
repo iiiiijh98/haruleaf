@@ -50,6 +50,8 @@ describe('GET /home', () => {
       todayDiary: false,
       coinBalance: 0,
       attendedToday: false,
+      newUnlocks: [],
+      attendanceCoins: 5,
     });
   });
 

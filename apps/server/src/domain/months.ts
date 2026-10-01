@@ -9,8 +9,9 @@ import {
   type MonthSnapshot,
   type PlantsResponse,
   type PlantSummary,
+  type UnlockNotice,
 } from '@haruleaf/shared';
-import { and, asc, count, eq, gte, lt } from 'drizzle-orm';
+import { and, asc, count, eq, gte, inArray, isNotNull, isNull, lt } from 'drizzle-orm';
 import type { Db, Executor, Tx } from '../db/client';
 import { coinTransactions, diaries, monthlyRecords, plants, userPlants, users } from '../db/schema';
 import type { Clock } from '../lib/clock';
@@ -100,7 +101,7 @@ export async function monthSnapshot(db: Executor, userId: string, monthStart: st
   };
 }
 
-export async function homeFor(db: Db, userId: string, today: string): Promise<HomeResponse> {
+export async function homeFor(db: Db, userId: string, today: string, attendanceCoins: number): Promise<HomeResponse> {
   const monthStart = monthStartOf(today);
   await ensureMonth(db, userId, monthStart);
   const snapshot = await monthSnapshot(db, userId, monthStart);
@@ -115,12 +116,30 @@ export async function homeFor(db: Db, userId: string, today: string): Promise<Ho
     .from(coinTransactions)
     .where(and(eq(coinTransactions.userId, userId), eq(coinTransactions.type, 'ATTENDANCE'), eq(coinTransactions.referenceKey, today)))
     .limit(1);
+  const unlockRows = await db
+    .select({ month: monthlyRecords.month, id: plants.id, name: plants.name, kind: plants.kind, catalogClass: plants.catalogClass })
+    .from(monthlyRecords)
+    .innerJoin(plants, eq(plants.id, monthlyRecords.unlockedPlantId))
+    .where(
+      and(
+        eq(monthlyRecords.userId, userId),
+        eq(monthlyRecords.finalized, true),
+        isNull(monthlyRecords.unlockAcknowledgedAt),
+      ),
+    )
+    .orderBy(asc(monthlyRecords.month));
+  const newUnlocks: UnlockNotice[] = unlockRows.map(({ month, ...plant }) => ({
+    month: monthKeyOf(month),
+    plant: { ...plant, kind: plant.kind as PlantSummary['kind'], catalogClass: plant.catalogClass as PlantSummary['catalogClass'] },
+  }));
   return {
     ...snapshot,
     today,
     todayDiary: Boolean(todayRow),
     coinBalance: account?.coinBalance ?? 0,
     attendedToday: Boolean(attendance),
+    newUnlocks,
+    attendanceCoins,
   };
 }
 
@@ -149,7 +168,10 @@ export async function listPlants(db: Db, userId: string): Promise<PlantsResponse
   };
 }
 
-export async function selectPlant(db: Db, userId: string, plantId: string, clock: Clock): Promise<HomeResponse> {
+export async function selectPlant(db: Db, userId: string, plantId: string,
+  clock: Clock,
+  attendanceCoins: number,
+): Promise<HomeResponse> {
   const today = clock.today();
   const monthStart = monthStartOf(today);
   await db.transaction(async (tx) => {
@@ -172,5 +194,20 @@ export async function selectPlant(db: Db, userId: string, plantId: string, clock
       .set({ plantId })
       .where(and(eq(monthlyRecords.userId, userId), eq(monthlyRecords.month, monthStart)));
   });
-  return homeFor(db, userId, today);
+  return homeFor(db, userId, today, attendanceCoins);
+}
+
+/** 해금 안내를 확인 처리한다. 본인 행 중 해금이 있고 아직 확인하지 않은 달만 바뀐다. */
+export async function acknowledgeUnlocks(db: Db, userId: string, months: string[]): Promise<void> {
+  await db
+    .update(monthlyRecords)
+    .set({ unlockAcknowledgedAt: new Date() })
+    .where(
+      and(
+        eq(monthlyRecords.userId, userId),
+        inArray(monthlyRecords.month, months.map((month) => `${month}-01`)),
+        isNotNull(monthlyRecords.unlockedPlantId),
+        isNull(monthlyRecords.unlockAcknowledgedAt),
+      ),
+    );
 }
