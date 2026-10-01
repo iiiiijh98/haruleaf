@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { fetchHome } from '@/api/diary';
 import { useCurrentUser } from '@/auth/AuthProvider';
+import { AttendanceCard } from '@/components/AttendanceCard';
 import { Button } from '@/components/Button';
 import { FormMessage } from '@/components/FormMessage';
 import { PlantImage } from '@/components/PlantImage';
@@ -27,7 +28,16 @@ export default function HomeScreen() {
           <Button title="다시 시도" variant="secondary" onPress={reload} />
         </>
       )}
-      {state.status === 'ready' && <HomeBody home={state.data} />}
+      {state.status === 'ready' && (
+        <>
+          <AttendanceCard
+            coinBalance={state.data.coinBalance}
+            attendedToday={state.data.attendedToday}
+            onAttended={reload}
+          />
+          <HomeBody home={state.data} />
+        </>
+      )}
     </Screen>
   );
 }
