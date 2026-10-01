@@ -4,6 +4,7 @@ import {
   growthStage,
   isFullyGrown,
   monthKeyOf,
+  type GrowthStage,
   type HomeResponse,
   type MonthSnapshot,
   type PlantsResponse,
@@ -60,6 +61,10 @@ export async function monthSnapshot(db: Executor, userId: string, monthStart: st
       plantName: plants.name,
       plantKind: plants.kind,
       plantClass: plants.catalogClass,
+      finalized: monthlyRecords.finalized,
+      storedWrittenDays: monthlyRecords.writtenDays,
+      storedPercent: monthlyRecords.growthPercent,
+      storedStage: monthlyRecords.growthStage,
     })
     .from(monthlyRecords)
     .leftJoin(plants, eq(plants.id, monthlyRecords.plantId))
@@ -70,8 +75,10 @@ export async function monthSnapshot(db: Executor, userId: string, monthStart: st
     .from(diaries)
     .where(and(eq(diaries.userId, userId), gte(diaries.diaryDate, monthStart), lt(diaries.diaryDate, nextMonthStart(monthStart))));
   const totalDays = record?.totalDays ?? totalDaysOf(monthStart);
-  const writtenDays = written?.value ?? 0;
-  const percent = growthPercent(writtenDays, totalDays);
+  // 마감된 달은 마감 때 저장한 확정값을 쓴다.
+  const writtenDays = record?.finalized ? record.storedWrittenDays : (written?.value ?? 0);
+  const percent = record?.finalized ? Number(record.storedPercent) : growthPercent(writtenDays, totalDays);
+  const stage = record?.finalized ? (record.storedStage as GrowthStage) : growthStage(percent);
   const plant: PlantSummary | null =
     record?.plantId && record.plantName && record.plantKind && record.plantClass
       ? {
@@ -88,7 +95,7 @@ export async function monthSnapshot(db: Executor, userId: string, monthStart: st
     writtenDays,
     totalDays,
     growthPercent: percent,
-    growthStage: growthStage(percent),
+    growthStage: stage,
     fullyGrown: isFullyGrown(percent),
   };
 }
@@ -115,10 +122,6 @@ export async function homeFor(db: Db, userId: string, today: string): Promise<Ho
     coinBalance: account?.coinBalance ?? 0,
     attendedToday: Boolean(attendance),
   };
-}
-
-export function getHome(db: Db, userId: string, clock: Clock): Promise<HomeResponse> {
-  return homeFor(db, userId, clock.today());
 }
 
 export async function listPlants(db: Db, userId: string): Promise<PlantsResponse> {

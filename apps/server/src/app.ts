@@ -1,6 +1,7 @@
 import cors from '@fastify/cors';
 import { PLATFORM_HEADER, platformSchema, type Platform } from '@haruleaf/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { randomPick, type PickUnlock } from './domain/closing';
 import type { Db } from './db/client';
 import type { Clock } from './lib/clock';
 import { AppError, registerErrorHandlers } from './lib/errors';
@@ -24,6 +25,7 @@ export type AppDeps = {
   clock: Clock;
   corsOrigins: string[];
   attendanceCoins?: number;
+  pickUnlock?: PickUnlock;
   logger?: boolean;
   logStream?: { write(message: string): void };
 };
@@ -64,6 +66,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     db: deps.db,
     clock: deps.clock,
     attendanceCoins: deps.attendanceCoins ?? 5,
+    pickUnlock: deps.pickUnlock ?? randomPick,
   });
 
   return app;
