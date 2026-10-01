@@ -13,12 +13,12 @@
 |---|---|
 | 마감 시점 | 요청 시 지연 마감. `GET /home`·`GET /plants`·`GET /garden`·`GET /garden/:month`가 처리 전에 `closePastMonths` 실행 |
 | 마감 대상 | `monthly_records` 중 `month < 이번 달 1일`이고 `finalized = false`인 행 전부. 행이 없는 달은 만들지 않음(정원 빈 카드) |
-| 확정값 | 마감 시 작성일수·성장률·단계를 계산해 `written_days`·`growth_percent`·`growth_stage`에 저장, `finalized = true`, `finalized_at = now()`. 마감된 월은 다시 쓰지 않음 |
+| 확정값 | 마감 시 작성일수·성장률·단계를 계산해 `written_days`·`growth_percent`(소수 둘째 자리)·`growth_stage`(반올림 전 값으로 판정)에 저장, `finalized = true`, `finalized_at = now()`. 마감된 월은 다시 쓰지 않음 |
 | 해금 조건 | 식물을 고른 달이고 반올림 전 성장률 ≥ 80 |
 | 해금 대상 | 활성·미보유 STANDARD 중 **무작위** 1종. 선택 함수 `pickUnlock(candidateIds) => id`는 의존성으로 주입(기본 `Math.random`, 테스트는 고정). 후보가 없으면 해금 없이 마감 |
 | 해금 기록 | `user_plants`(ACHIEVEMENT, `onConflictDoNothing`) + `monthly_records.unlocked_plant_id`. `unlocked_plant_id`가 명세서 `standard_unlock_issued` 역할 |
 | 해금 안내 | 홈에 확인 전까지 표시. 확인 여부는 서버 `monthly_records.unlock_acknowledged_at`(마이그레이션 `0002_unlock_ack`) |
-| 정원 연도 범위 | 가입 연도(`users.created_at`, Asia/Seoul) ~ 올해 |
+| 정원 연도 범위 | 사용자의 가장 이른 월 기록 연도(없으면 올해) ~ 올해. 가입 직후 홈을 열면 이번 달 기록이 생기므로 사실상 가입 연도이고, 시연용으로 넣은 이전 달도 볼 수 있다 |
 | 시연 | 개발용 CLI `npm run dev:seed-month -- <아이디> <YYYY-MM> <식물ID> <일수>` (HTTP 비노출) |
 | 코인 | 마감은 코인을 건드리지 않음 |
 
@@ -73,7 +73,7 @@ CLI `apps/server/src/scripts/seed-month.ts`, 루트 `npm run dev:seed-month -- <
 ## 4. 앱
 - **shared**: `catalogClassLabel(cls)` → STANDARD "기본", LIMITED "한정", SPECIAL "스페셜". 상점 배지에 적용.
 - **홈**
-  - `newUnlocks`가 있으면 출석 카드 위에 해금 안내 카드: "지난달 기록으로 ○○을(를) 정원 식구로 맞았어요."(여러 개면 줄마다 "YYYY년 M월 · ○○"), [확인] → `POST /unlocks/ack` 후 `reload()`, [식물 고르기] → `/plants`.
+  - `newUnlocks`가 있으면 출석 카드 위에 해금 안내 카드: 해금마다 한 줄 "YYYY년 M월 기록으로 ○○을(를) 정원 식구로 맞았어요.", [확인] → `POST /unlocks/ack` 후 `reload()`, [식물 고르기] → `/plants`.
   - 출석 버튼 "출석하기 (+n)" (`attendanceCoins`).
 - **정원 탭**: ◀ YYYY년 ▶(minYear~maxYear 밖은 비활성), 12개월 카드 격자(웹 넓은 화면 4열, 그 외 3열). 카드: 월, 식물 그림(`growthStage`), 성장률 소수 1자리, 상태별 문구("진행 중"·"식물 없음"·빈 카드는 흐리게). `EMPTY`는 누를 수 없음. 탭 재방문 시 올해로(`tabPress`).
 - **월 상세** `/garden/[month]`(hidden): 큰 식물 그림·이름·"77.4% · 24/31일"·완전 성장 표시·"이 달에 ○○ 해금", 그 달 일기 목록(`GET /diaries?month=`) → `/entry/[date]`. 지난 달은 "읽기 전용" 배지.
