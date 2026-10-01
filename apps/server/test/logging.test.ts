@@ -36,6 +36,30 @@ describe('500 오류 로그', () => {
       await app.close();
     }
   });
+
+  it('여러 줄 파라미터가 들어간 DB 오류도 본문을 로그에 남기지 않는다', async () => {
+    const lines: string[] = [];
+    const app = await buildApp({
+      db,
+      clock: fixedClock('2026-09-30'),
+      corsOrigins: [],
+      logStream: { write: (message) => void lines.push(message) },
+    });
+    app.get('/__test/db-fail-multiline', async () => {
+      await db.execute(sql`select ${'첫 줄\nat secret-diary'}::int`);
+      return { ok: true };
+    });
+    try {
+      const response = await app.inject({ method: 'GET', url: '/__test/db-fail-multiline', headers: { 'x-client-platform': 'ios' } });
+      expect(response.statusCode).toBe(500);
+      const log = lines.join('');
+      expect(log).toContain('unhandled error');
+      expect(log).not.toContain('secret-diary');
+      expect(log).not.toContain('첫 줄');
+    } finally {
+      await app.close();
+    }
+  });
 });
 
 describe('serializeError', () => {
@@ -52,5 +76,16 @@ describe('serializeError', () => {
 
   it('Error가 아닌 값도 처리한다', () => {
     expect(serializeError('boom')).toEqual({ name: 'Error', code: undefined, constraint: undefined, table: undefined, stack: undefined });
+  });
+
+  it('여러 줄 메시지 안에서 "at "으로 시작하는 줄도 남기지 않는다', () => {
+    const error = new Error('Failed query: insert into diaries\nparams: 엄마랑 공원에 갔다\nat secret-diary-line');
+    const result = serializeError(error);
+    expect(result.stack).toBeDefined();
+    expect(result.stack).not.toContain('secret-diary-line');
+    expect(result.stack).not.toContain('엄마랑');
+    for (const line of result.stack!.split('\n')) {
+      expect(line).toMatch(/^\s+at .+:\d+:\d+\)?$/);
+    }
   });
 });

@@ -14,21 +14,29 @@ export class AppError extends Error {
 
 type ErrorLike = {
   name?: unknown;
+  message?: unknown;
   code?: unknown;
   stack?: unknown;
   cause?: { code?: unknown; constraint?: unknown; table?: unknown };
 };
 
-/** 로그용 오류 요약. DB 오류 message에는 쿼리 파라미터가 들어있어 message는 남기지 않는다. */
+/** V8 스택 프레임 줄: "    at 함수 (파일:줄:칸)" 또는 "    at 파일:줄:칸" */
+const STACK_FRAME = /^\s+at .+:\d+:\d+\)?$/;
+
+/**
+ * 로그용 오류 요약. DB 오류 message에는 쿼리 파라미터(일기 본문 등)가 들어있어 message는 남기지 않는다.
+ * 스택 앞부분에는 message가 그대로 들어있으므로 message 뒤부터, 프레임 형식인 줄만 남긴다.
+ */
 export function serializeError(error: unknown) {
   const e = (typeof error === 'object' && error !== null ? error : {}) as ErrorLike;
-  const stack =
-    typeof e.stack === 'string'
-      ? e.stack
-          .split('\n')
-          .filter((line) => line.trim().startsWith('at '))
-          .join('\n')
-      : undefined;
+  let stack: string | undefined;
+  if (typeof e.stack === 'string') {
+    const message = typeof e.message === 'string' ? e.message : '';
+    const index = message ? e.stack.indexOf(message) : -1;
+    const afterMessage = index >= 0 ? e.stack.slice(index + message.length) : e.stack;
+    const frames = afterMessage.split('\n').filter((line) => STACK_FRAME.test(line));
+    stack = frames.length > 0 ? frames.join('\n') : undefined;
+  }
   return {
     name: typeof e.name === 'string' ? e.name : 'Error',
     code: e.cause?.code ?? e.code,
@@ -37,6 +45,8 @@ export function serializeError(error: unknown) {
     stack,
   };
 }
+
+export const unauthorized = () => new AppError('UNAUTHORIZED', '다시 로그인해주세요.', 401);
 
 function send(reply: FastifyReply, status: number, code: string, message: string) {
   const body: ApiErrorBody = { error: { code, message } };

@@ -2,7 +2,7 @@ import type { AuthResponse, LoginInput, SignupInput, User } from '@haruleaf/shar
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { authEvents, plants, sessions, userCredentials, userPlants, users } from '../db/schema';
-import { AppError } from '../lib/errors';
+import { AppError, unauthorized } from '../lib/errors';
 import { dummyPasswordHash, hashPassword, verifyPassword } from '../lib/password';
 import type { ClientMeta } from '../lib/request-meta';
 import { createToken, hashToken } from '../lib/token';
@@ -123,8 +123,6 @@ export async function logout(db: Db, auth: AuthContext, meta: ClientMeta, now = 
     await recordEvent(tx, 'LOGOUT', auth.loginId, auth.userId, meta);
   });
 }
-
-const unauthorized = () => new AppError('UNAUTHORIZED', '다시 로그인해주세요.', 401);
 
 export async function getUser(db: Db, userId: string): Promise<User> {
   const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
