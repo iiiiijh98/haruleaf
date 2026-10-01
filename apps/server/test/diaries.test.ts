@@ -115,6 +115,12 @@ describe('GET /diaries', () => {
     expect(response.json().error.message).toBe('월 형식이 올바르지 않아요.');
   });
 
+  it('0000년 월은 500이 아니라 400', async () => {
+    const { token } = await readyUser();
+    const response = await app.inject({ method: 'GET', url: '/diaries?month=0000-01', headers: bearer(token) });
+    expect(response.statusCode).toBe(400);
+  });
+
   it('다른 사용자의 일기는 보이지 않는다', async () => {
     const a = await readyUser('haru_01');
     const b = await readyUser('haru_02');
@@ -144,6 +150,27 @@ describe('GET /diaries/:date', () => {
 });
 
 describe('PUT·DELETE /diaries/:date', () => {
+  it('0000년 날짜는 500이 아니라 400', async () => {
+    const { token } = await readyUser();
+    const response = await app.inject({ method: 'GET', url: '/diaries/0000-01-01', headers: bearer(token) });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('다른 사용자의 일기는 수정·삭제할 수 없고 원본은 그대로다', async () => {
+    const a = await readyUser('haru_01');
+    const b = await readyUser('haru_02');
+    await write(a.token, { body: 'A의 일기' });
+    const notFound = { error: { code: 'DIARY_NOT_FOUND', message: '일기를 찾을 수 없어요.' } };
+    const put = await app.inject({ method: 'PUT', url: '/diaries/2026-10-15', headers: bearer(b.token), payload: { body: 'B가 덮어씀' } });
+    expect(put.statusCode).toBe(404);
+    expect(put.json()).toEqual(notFound);
+    const del = await app.inject({ method: 'DELETE', url: '/diaries/2026-10-15', headers: bearer(b.token) });
+    expect(del.statusCode).toBe(404);
+    expect(del.json()).toEqual(notFound);
+    const detail = await app.inject({ method: 'GET', url: '/diaries/2026-10-15', headers: bearer(a.token) });
+    expect(detail.json()).toMatchObject({ diary: { date: '2026-10-15', body: 'A의 일기' } });
+  });
+
   it('수정은 작성일수를 바꾸지 않는다', async () => {
     const { token } = await readyUser();
     await write(token, { body: '처음' });

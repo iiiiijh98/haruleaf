@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput } from 'react-native';
 import { ApiError } from '@/api/client';
-import { createDiaryRequest, updateDiaryRequest } from '@/api/diary';
+import { createDiaryRequest, fetchHome, updateDiaryRequest } from '@/api/diary';
 import { Button } from '@/components/Button';
 import { FormMessage } from '@/components/FormMessage';
 import { Screen } from '@/components/Screen';
@@ -15,6 +15,7 @@ export function DiaryEditor({ initialBody, mode }: { initialBody: string; mode: 
   const [body, setBody] = useState(initialBody);
   const [message, setMessage] = useState<string | null>(null);
   const [needsPlant, setNeedsPlant] = useState(false);
+  const [existingDate, setExistingDate] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const length = Array.from(body).length;
 
@@ -27,6 +28,7 @@ export function DiaryEditor({ initialBody, mode }: { initialBody: string; mode: 
     }
     setSaving(true);
     setMessage(null);
+    setExistingDate(null);
     try {
       const { diary } =
         mode.kind === 'create' ? await createDiaryRequest(parsed.data) : await updateDiaryRequest(mode.date, parsed.data);
@@ -34,6 +36,13 @@ export function DiaryEditor({ initialBody, mode }: { initialBody: string; mode: 
     } catch (error) {
       setNeedsPlant(error instanceof ApiError && error.code === 'PLANT_NOT_SELECTED');
       setMessage(error instanceof ApiError ? error.message : '저장하지 못했어요.');
+      if (mode.kind === 'create' && error instanceof ApiError && error.code === 'DIARY_EXISTS') {
+        try {
+          setExistingDate((await fetchHome()).today);
+        } catch {
+          // 오늘 날짜를 알 수 없으면 버튼 없이 메시지만 보여준다.
+        }
+      }
       setSaving(false);
     }
   }
@@ -44,6 +53,9 @@ export function DiaryEditor({ initialBody, mode }: { initialBody: string; mode: 
         {mode.kind === 'create' ? '오늘 일기 쓰기' : '일기 고치기'}
       </Text>
       {message && <FormMessage tone="error" message={message} />}
+      {existingDate && (
+        <Button title="오늘 일기 보기" variant="secondary" onPress={() => router.replace(`/entry/${existingDate}`)} />
+      )}
       {needsPlant && <Button title="식물 고르러 가기" variant="secondary" onPress={() => router.push('/plants')} />}
       <TextInput
         style={styles.input}

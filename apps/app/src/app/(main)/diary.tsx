@@ -1,6 +1,6 @@
 import { formatMonthLabel, shiftMonth, type DiaryEntry } from '@haruleaf/shared';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { fetchDiaries } from '@/api/diary';
 import { Button } from '@/components/Button';
@@ -18,11 +18,14 @@ function dayLabel(date: string): string {
   return `${Number(date.slice(8, 10))}일`;
 }
 
+type TabNavigation = { addListener(event: 'tabPress', callback: () => void): () => void };
+
 export default function DiaryListScreen() {
   // null = 서버 기준 이번 달
   const [month, setMonth] = useState<string | null>(null);
-  // 탭은 마운트된 채 남으므로, 포커스를 잃을 때(cleanup) 이번 달로 되돌린다.
-  useFocusEffect(useCallback(() => () => setMonth(null), []));
+  const navigation = useNavigation<TabNavigation>();
+  // 탭은 마운트된 채 남으므로, 일기 탭을 직접 누를 때만 이번 달로 되돌린다.
+  useEffect(() => navigation.addListener('tabPress', () => setMonth(null)), [navigation]);
   const load = useCallback(() => fetchDiaries(month ?? undefined), [month]);
   const { state, reload } = useRemoteData(load);
 

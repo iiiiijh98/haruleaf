@@ -41,13 +41,13 @@ describe('monthKeySchema · diaryDateSchema', () => {
   it.each(['2026-10', '2026-01', '2026-12'])('월 %s 허용', (value) => {
     expect(monthKeySchema.parse(value)).toBe(value);
   });
-  it.each(['2026-13', '2026-1', '26-10', '2026-10-01'])('월 %s 거절', (value) => {
+  it.each(['2026-13', '2026-1', '26-10', '2026-10-01', '0000-01'])('월 %s 거절', (value) => {
     expect(first(monthKeySchema.safeParse(value))).toBe('월 형식이 올바르지 않아요.');
   });
   it.each(['2026-10-15', '2028-02-29'])('날짜 %s 허용', (value) => {
     expect(diaryDateSchema.parse(value)).toBe(value);
   });
-  it.each(['2026-02-30', '2026-02-29', '2026-10-32', '2026-10-1', 'today'])('날짜 %s 거절', (value) => {
+  it.each(['2026-02-30', '2026-02-29', '2026-10-32', '2026-10-1', 'today', '0000-01-01'])('날짜 %s 거절', (value) => {
     expect(first(diaryDateSchema.safeParse(value))).toBe('날짜 형식이 올바르지 않아요.');
   });
 });

@@ -29,12 +29,12 @@ export const selectPlantSchema = z.object(
 );
 
 const MONTH_MESSAGE = '월 형식이 올바르지 않아요.';
-export const monthKeySchema = z.string({ error: MONTH_MESSAGE }).regex(/^\d{4}-(0[1-9]|1[0-2])$/, MONTH_MESSAGE);
+export const monthKeySchema = z.string({ error: MONTH_MESSAGE }).regex(/^[1-9]\d{3}-(0[1-9]|1[0-2])$/, MONTH_MESSAGE);
 
 const DATE_MESSAGE = '날짜 형식이 올바르지 않아요.';
 export const diaryDateSchema = z
   .string({ error: DATE_MESSAGE })
-  .regex(/^\d{4}-\d{2}-\d{2}$/, DATE_MESSAGE)
+  .regex(/^[1-9]\d{3}-\d{2}-\d{2}$/, DATE_MESSAGE)
   .refine((value) => {
     const date = new Date(`${value}T00:00:00Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
