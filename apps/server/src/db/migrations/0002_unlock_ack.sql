@@ -1,0 +1,1 @@
+ALTER TABLE "monthly_records" ADD COLUMN "unlock_acknowledged_at" timestamp with time zone;

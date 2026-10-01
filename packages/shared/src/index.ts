@@ -9,3 +9,4 @@ export * from './validation';
 export * from './diary';
 export * from './coins';
 export * from './text';
+export * from './garden';

@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app';
-import { coinTransactions, userPlants, users } from '../src/db/schema';
+import { coinTransactions, plants, userPlants, users } from '../src/db/schema';
 import { seedCatalog } from '../src/db/seed';
 import { grantCoins } from '../src/domain/coins';
 import { bearer } from './auth-helpers';
@@ -50,6 +50,22 @@ describe('GET /shop', () => {
 });
 
 describe('POST /shop/purchase', () => {
+  it('판매 중지된 LIMITED는 404', async () => {
+    const { token } = await signupUser(app);
+    await grantCoins(db, 'haru_01', 100);
+    await db.update(plants).set({ isActive: false }).where(eq(plants.id, 'moonflower'));
+    const response = await buy(token, 'moonflower');
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error.code).toBe('PLANT_NOT_FOUND');
+  });
+
+  it.each([{}, { plantId: '' }, { plantId: 3 }])('본문 %j 는 400', async (payload) => {
+    const { token } = await signupUser(app);
+    const response = await app.inject({ method: 'POST', url: '/shop/purchase', headers: bearer(token), payload });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('VALIDATION_ERROR');
+  });
+
   it('코인이 부족하면 409이고 아무것도 바뀌지 않는다', async () => {
     const { token, userId } = await signupUser(app);
     await grantCoins(db, 'haru_01', 49);

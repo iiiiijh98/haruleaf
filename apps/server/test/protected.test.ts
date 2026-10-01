@@ -60,7 +60,8 @@ describe('보호 라우트', () => {
       url: '/home',
       headers: { origin: 'http://localhost:8081', 'access-control-request-method': 'GET' },
     });
-    expect(response.statusCode).not.toBe(401);
+    expect(response.statusCode).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:8081');
   });
 
   it('미인증 요청은 본문을 읽기 전에 401', async () => {

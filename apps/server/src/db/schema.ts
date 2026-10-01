@@ -160,6 +160,7 @@ export const monthlyRecords = pgTable(
     finalized: boolean('finalized').notNull().default(false),
     finalizedAt: timestamptz('finalized_at'),
     unlockedPlantId: varchar('unlocked_plant_id', { length: 40 }).references(() => plants.id),
+    unlockAcknowledgedAt: timestamptz('unlock_acknowledged_at'),
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.month] }),

@@ -15,6 +15,13 @@
       "when": 1790832352940,
       "tag": "0001_coin_adjustment",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790886426930,
+      "tag": "0002_unlock_ack",
+      "breakpoints": true
     }
   ]
 }
