@@ -23,14 +23,13 @@ export function AttendanceCard({ coinBalance, attendedToday, onAttended }: Props
     setMessage(null);
     try {
       await attendRequest();
-      onAttended(); // pending은 새 홈이 attendedToday로 그려질 때까지 유지
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'ALREADY_ATTENDED') {
-        onAttended();
-        return;
+      if (!(error instanceof ApiError && error.code === 'ALREADY_ATTENDED')) {
+        setMessage(error instanceof ApiError ? error.message : '출석하지 못했어요.');
       }
-      setMessage(error instanceof ApiError ? error.message : '출석하지 못했어요.');
+    } finally {
       setPending(false);
+      onAttended();
     }
   }
 
@@ -45,7 +44,7 @@ export function AttendanceCard({ coinBalance, attendedToday, onAttended }: Props
             title={attendedToday ? '오늘 출석 완료' : '출석하기'}
             variant={attendedToday ? 'secondary' : 'primary'}
             onPress={() => void attend()}
-            loading={pending && !attendedToday}
+            loading={pending}
             disabled={attendedToday}
           />
         </View>
