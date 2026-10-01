@@ -9,6 +9,7 @@ import { FormMessage } from '@/components/FormMessage';
 import { PlantImage } from '@/components/PlantImage';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Screen } from '@/components/Screen';
+import { UnlockNotice } from '@/components/UnlockNotice';
 import { useRemoteData } from '@/hooks/useRemoteData';
 import { colors, fontSize, radius, spacing } from '@/theme/tokens';
 
@@ -30,9 +31,11 @@ export default function HomeScreen() {
       )}
       {state.status === 'ready' && (
         <>
+          {state.data.newUnlocks.length > 0 && <UnlockNotice unlocks={state.data.newUnlocks} onDone={reload} />}
           <AttendanceCard
             coinBalance={state.data.coinBalance}
             attendedToday={state.data.attendedToday}
+            attendanceCoins={state.data.attendanceCoins}
             onAttended={reload}
           />
           <HomeBody home={state.data} />

@@ -7,10 +7,10 @@ import { colors, fontSize, radius, spacing } from '@/theme/tokens';
 import { Button } from './Button';
 import { FormMessage } from './FormMessage';
 
-type Props = { coinBalance: number; attendedToday: boolean; onAttended: () => void };
+type Props = { coinBalance: number; attendedToday: boolean; attendanceCoins: number; onAttended: () => void };
 
 /** 홈 잔액과 오늘 출석 버튼(FR-13·14·20). 결과는 onAttended로 홈을 다시 불러와 반영한다. */
-export function AttendanceCard({ coinBalance, attendedToday, onAttended }: Props) {
+export function AttendanceCard({ coinBalance, attendedToday, attendanceCoins, onAttended }: Props) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -41,7 +41,7 @@ export function AttendanceCard({ coinBalance, attendedToday, onAttended }: Props
         </Text>
         <View style={styles.action}>
           <Button
-            title={attendedToday ? '오늘 출석 완료' : '출석하기'}
+            title={attendedToday ? '오늘 출석 완료' : `출석하기 (+${attendanceCoins})`}
             variant={attendedToday ? 'secondary' : 'primary'}
             onPress={() => void attend()}
             loading={pending}

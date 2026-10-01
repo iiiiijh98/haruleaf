@@ -1,4 +1,4 @@
-import type { ShopItem } from '@haruleaf/shared';
+import { catalogClassLabel, type ShopItem } from '@haruleaf/shared';
 import { router, useIsFocused } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -72,7 +72,7 @@ function ShopContent() {
               const shortage = item.coinPrice - state.data.coinBalance;
               return (
                 <View key={item.id} style={styles.card}>
-                  <Text style={[styles.badge, item.catalogClass === 'SPECIAL' && styles.badgeSpecial]}>{item.catalogClass}</Text>
+                  <Text style={[styles.badge, item.catalogClass === 'SPECIAL' && styles.badgeSpecial]}>{catalogClassLabel(item.catalogClass)}</Text>
                   <PlantImage plantId={item.id} stage={5} size={120} accessibilityLabel={`${item.name} 그림`} />
                   <Text style={styles.name}>{item.name}</Text>
                   <Text style={styles.description}>{item.description}</Text>
