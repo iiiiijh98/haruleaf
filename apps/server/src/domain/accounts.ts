@@ -1,6 +1,6 @@
 import type { AuthResponse, LoginInput, SignupInput, User } from '@haruleaf/shared';
 import { and, eq, gt, isNull } from 'drizzle-orm';
-import type { Db } from '../db/client';
+import type { Db, Executor } from '../db/client';
 import { authEvents, plants, sessions, userCredentials, userPlants, users } from '../db/schema';
 import { isUniqueViolation } from '../lib/db-errors';
 import { AppError, unauthorized } from '../lib/errors';
@@ -11,8 +11,6 @@ import { createToken, hashToken } from '../lib/token';
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const EVENT_LOGIN_ID_MAX = 30;
 
-type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
-type Executor = Db | Tx;
 type AuthEvent = 'SIGNUP' | 'LOGIN_SUCCESS' | 'LOGIN_FAILED' | 'LOGOUT';
 
 export type AuthContext = { userId: string; sessionId: string; loginId: string };

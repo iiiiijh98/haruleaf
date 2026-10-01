@@ -5,6 +5,7 @@ import { buildApp } from '../src/app';
 import { diaries, monthlyRecords } from '../src/db/schema';
 import { seedCatalog } from '../src/db/seed';
 import { bearer } from './auth-helpers';
+import { fireConcurrently } from './concurrency';
 import { createTestDb, resetDatabase } from './helpers';
 import { insertDiaries, mutableClock, signupUser } from './months-helpers';
 
@@ -41,6 +42,12 @@ async function readyUser(loginId = 'haru_01') {
 }
 
 describe('POST /diaries', () => {
+  it('같은 날 동시에 5번 써도 1편만 저장된다', async () => {
+    const { token } = await readyUser();
+    const results = await fireConcurrently(5, () => write(token, { body: '동시' }));
+    expect(results.map((result) => result.statusCode).sort()).toEqual([201, 409, 409, 409, 409]);
+    expect(await db.select().from(diaries)).toHaveLength(1);
+  });
   it('식물을 고르지 않았으면 409이고 저장하지 않는다', async () => {
     const { token } = await signupUser(app);
     const response = await write(token, { body: '오늘' });

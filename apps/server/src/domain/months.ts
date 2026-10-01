@@ -10,13 +10,12 @@ import {
   type PlantSummary,
 } from '@haruleaf/shared';
 import { and, asc, count, eq, gte, lt } from 'drizzle-orm';
-import type { Db } from '../db/client';
+import type { Db, Executor, Tx } from '../db/client';
 import { diaries, monthlyRecords, plants, userPlants } from '../db/schema';
 import type { Clock } from '../lib/clock';
 import { AppError } from '../lib/errors';
 
-export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
-export type Executor = Db | Tx;
+export type { Executor, Tx } from '../db/client';
 
 /** 'YYYY-MM-DD' → 그 달 1일 'YYYY-MM-01' */
 export function monthStartOf(date: string): string {
@@ -94,8 +93,7 @@ export async function monthSnapshot(db: Executor, userId: string, monthStart: st
   };
 }
 
-export async function getHome(db: Db, userId: string, clock: Clock): Promise<HomeResponse> {
-  const today = clock.today();
+export async function homeFor(db: Db, userId: string, today: string): Promise<HomeResponse> {
   const monthStart = monthStartOf(today);
   await ensureMonth(db, userId, monthStart);
   const snapshot = await monthSnapshot(db, userId, monthStart);
@@ -105,6 +103,10 @@ export async function getHome(db: Db, userId: string, clock: Clock): Promise<Hom
     .where(and(eq(diaries.userId, userId), eq(diaries.diaryDate, today)))
     .limit(1);
   return { ...snapshot, today, todayDiary: Boolean(todayRow) };
+}
+
+export function getHome(db: Db, userId: string, clock: Clock): Promise<HomeResponse> {
+  return homeFor(db, userId, clock.today());
 }
 
 export async function listPlants(db: Db, userId: string): Promise<PlantsResponse> {
@@ -121,7 +123,7 @@ export async function listPlants(db: Db, userId: string): Promise<PlantsResponse
     .from(plants)
     .leftJoin(userPlants, and(eq(userPlants.plantId, plants.id), eq(userPlants.userId, userId)))
     .where(eq(plants.isActive, true))
-    .orderBy(asc(plants.sortOrder));
+    .orderBy(asc(plants.sortOrder), asc(plants.id));
   return {
     plants: rows.map(({ ownerId, ...plant }) => ({
       ...plant,
@@ -133,7 +135,8 @@ export async function listPlants(db: Db, userId: string): Promise<PlantsResponse
 }
 
 export async function selectPlant(db: Db, userId: string, plantId: string, clock: Clock): Promise<HomeResponse> {
-  const monthStart = monthStartOf(clock.today());
+  const today = clock.today();
+  const monthStart = monthStartOf(today);
   await db.transaction(async (tx) => {
     const [plant] = await tx
       .select({ id: plants.id })
@@ -154,5 +157,5 @@ export async function selectPlant(db: Db, userId: string, plantId: string, clock
       .set({ plantId })
       .where(and(eq(monthlyRecords.userId, userId), eq(monthlyRecords.month, monthStart)));
   });
-  return getHome(db, userId, clock);
+  return homeFor(db, userId, today);
 }

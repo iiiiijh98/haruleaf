@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app';
-import { monthlyRecords } from '../src/db/schema';
+import { monthlyRecords, plants, userPlants } from '../src/db/schema';
 import { seedCatalog } from '../src/db/seed';
 import { bearer } from './auth-helpers';
 import { createTestDb, resetDatabase } from './helpers';
@@ -107,6 +107,22 @@ describe('GET /home', () => {
 });
 
 describe('GET /plants', () => {
+  it('보유 여부는 사용자마다 따로 계산한다', async () => {
+    const a = await signupUser(app, 'haru_01');
+    const b = await signupUser(app, 'haru_02');
+    await db.insert(userPlants).values({ userId: b.userId, plantId: 'hydrangea', unlockSource: 'ACHIEVEMENT' });
+    const ofA = (await app.inject({ method: 'GET', url: '/plants', headers: bearer(a.token) })).json().plants;
+    const ofB = (await app.inject({ method: 'GET', url: '/plants', headers: bearer(b.token) })).json().plants;
+    expect(ofA.find((plant: { id: string }) => plant.id === 'hydrangea').owned).toBe(false);
+    expect(ofB.find((plant: { id: string }) => plant.id === 'hydrangea').owned).toBe(true);
+  });
+
+  it('정렬 순서가 같으면 id 순', async () => {
+    await db.update(plants).set({ sortOrder: 1 });
+    const { token } = await signupUser(app);
+    const ids = (await app.inject({ method: 'GET', url: '/plants', headers: bearer(token) })).json().plants.map((plant: { id: string }) => plant.id);
+    expect(ids).toEqual([...ids].sort());
+  });
   it('카탈로그를 순서대로, 보유 여부와 함께', async () => {
     const { token } = await signupUser(app);
     const response = await app.inject({ method: 'GET', url: '/plants', headers: bearer(token) });
@@ -122,6 +138,11 @@ describe('GET /plants', () => {
 });
 
 describe('PUT /months/current/plant', () => {
+  it('비활성 식물은 404', async () => {
+    const { token } = await signupUser(app);
+    await db.update(plants).set({ isActive: false }).where(eq(plants.id, 'rose'));
+    expect((await choose(token, 'rose')).statusCode).toBe(404);
+  });
   it('보유한 식물을 고르면 홈에 반영되고, 잠기기 전에는 바꿀 수 있다', async () => {
     const { token } = await signupUser(app);
     expect((await choose(token, 'rose')).json().plant).toEqual({ id: 'rose', name: '장미', kind: 'FLOWER', catalogClass: 'STANDARD' });
