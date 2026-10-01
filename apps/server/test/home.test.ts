@@ -181,6 +181,23 @@ describe('PUT /months/current/plant', () => {
     expect(response.json()).toEqual({ error: { code: 'SELECTION_LOCKED', message: '첫 일기를 쓴 달은 식물을 바꿀 수 없어요.' } });
   });
 
+  it('이미 마감된 달이면 403 MONTH_CLOSED이고 식물이 바뀌지 않는다', async () => {
+    const { token, userId } = await signupUser(app);
+    await choose(token, 'rose');
+    await db
+      .update(monthlyRecords)
+      .set({ finalized: true })
+      .where(and(eq(monthlyRecords.userId, userId), eq(monthlyRecords.month, '2026-10-01')));
+    const response = await choose(token, 'tulip');
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toEqual({ error: { code: 'MONTH_CLOSED', message: '지난달 기록은 읽기 전용이에요.' } });
+    const [record] = await db
+      .select()
+      .from(monthlyRecords)
+      .where(and(eq(monthlyRecords.userId, userId), eq(monthlyRecords.month, '2026-10-01')));
+    expect(record!.plantId).toBe('rose');
+  });
+
   it('입력이 비면 400', async () => {
     const { token } = await signupUser(app);
     const response = await choose(token, '');

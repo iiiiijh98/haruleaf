@@ -46,6 +46,7 @@ export function serializeError(error: unknown) {
   };
 }
 
+export const monthClosed = () => new AppError('MONTH_CLOSED', '지난달 기록은 읽기 전용이에요.', 403);
 export const unauthorized = () => new AppError('UNAUTHORIZED', '다시 로그인해주세요.', 401);
 
 function send(reply: FastifyReply, status: number, code: string, message: string) {

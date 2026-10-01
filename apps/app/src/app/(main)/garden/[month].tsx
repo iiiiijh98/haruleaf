@@ -68,7 +68,13 @@ function GardenMonthContent() {
         </View>
       )}
       <Text style={styles.section}>이 달의 일기</Text>
-      {list.state.status === 'error' && <FormMessage tone="error" message={list.state.message} />}
+      {list.state.status === 'loading' && <Text style={styles.muted}>불러오는 중…</Text>}
+      {list.state.status === 'error' && (
+        <>
+          <FormMessage tone="error" message={list.state.message} />
+          <Button title="다시 시도" variant="secondary" onPress={list.reload} />
+        </>
+      )}
       {list.state.status === 'ready' &&
         (list.state.data.diaries.length === 0 ? (
           <Text style={styles.muted}>이 달에 쓴 일기가 없어요.</Text>

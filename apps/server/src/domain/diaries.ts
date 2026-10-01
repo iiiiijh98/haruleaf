@@ -4,7 +4,7 @@ import type { Db } from '../db/client';
 import { diaries, monthlyRecords } from '../db/schema';
 import type { Clock } from '../lib/clock';
 import { isUniqueViolation } from '../lib/db-errors';
-import { AppError } from '../lib/errors';
+import { AppError, monthClosed } from '../lib/errors';
 import { lockMonth, monthStartOf, nextMonthStart } from './months';
 
 function toEntry(row: typeof diaries.$inferSelect): DiaryEntry {
@@ -23,7 +23,7 @@ function isCurrentMonth(date: string, clock: Clock): boolean {
 }
 
 function assertEditable(date: string, clock: Clock): void {
-  if (!isCurrentMonth(date, clock)) throw new AppError('MONTH_CLOSED', '지난달 기록은 읽기 전용이에요.', 403);
+  if (!isCurrentMonth(date, clock)) throw monthClosed();
 }
 
 export async function createDiary(db: Db, userId: string, body: string, clock: Clock): Promise<DiaryEntry> {
@@ -32,6 +32,7 @@ export async function createDiary(db: Db, userId: string, body: string, clock: C
   try {
     return await db.transaction(async (tx) => {
       const record = await lockMonth(tx, userId, monthStart);
+      if (record.finalized) throw monthClosed();
       if (!record.plantId) throw new AppError('PLANT_NOT_SELECTED', '이번 달 식물을 먼저 골라주세요.', 409);
       const [row] = await tx.insert(diaries).values({ userId, diaryDate: today, body }).returning();
       if (!row) throw new Error('일기 저장 결과가 비어 있습니다.');

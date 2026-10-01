@@ -15,7 +15,7 @@ import { and, asc, count, eq, gte, inArray, isNotNull, isNull, lt } from 'drizzl
 import type { Db, Executor, Tx } from '../db/client';
 import { coinTransactions, diaries, monthlyRecords, plants, userPlants, users } from '../db/schema';
 import type { Clock } from '../lib/clock';
-import { AppError } from '../lib/errors';
+import { AppError, monthClosed } from '../lib/errors';
 
 export type { Executor, Tx } from '../db/client';
 
@@ -168,7 +168,10 @@ export async function listPlants(db: Db, userId: string): Promise<PlantsResponse
   };
 }
 
-export async function selectPlant(db: Db, userId: string, plantId: string,
+export async function selectPlant(
+  db: Db,
+  userId: string,
+  plantId: string,
   clock: Clock,
   attendanceCoins: number,
 ): Promise<HomeResponse> {
@@ -188,6 +191,7 @@ export async function selectPlant(db: Db, userId: string, plantId: string,
       .limit(1);
     if (!owned) throw new AppError('PLANT_NOT_OWNED', '보유한 식물만 고를 수 있어요.', 403);
     const record = await lockMonth(tx, userId, monthStart);
+    if (record.finalized) throw monthClosed();
     if (record.selectionLocked) throw new AppError('SELECTION_LOCKED', '첫 일기를 쓴 달은 식물을 바꿀 수 없어요.', 409);
     await tx
       .update(monthlyRecords)

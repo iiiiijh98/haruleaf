@@ -56,6 +56,18 @@ describe('POST /diaries', () => {
     expect(await db.select().from(diaries)).toHaveLength(0);
   });
 
+  it('이미 마감된 달이면 403 MONTH_CLOSED이고 일기를 저장하지 않는다', async () => {
+    const { token, userId } = await readyUser();
+    await db
+      .update(monthlyRecords)
+      .set({ finalized: true })
+      .where(and(eq(monthlyRecords.userId, userId), eq(monthlyRecords.month, '2026-10-01')));
+    const response = await write(token, { body: '자정 직전' });
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toEqual({ error: { code: 'MONTH_CLOSED', message: '지난달 기록은 읽기 전용이에요.' } });
+    expect(await db.select().from(diaries)).toHaveLength(0);
+  });
+
   it('서버 기준 오늘 날짜로 저장하고 식물을 고정한다', async () => {
     const { token, userId } = await readyUser();
     const response = await write(token, { body: '  오늘은\n맑았다  ', date: '2026-10-01' });
