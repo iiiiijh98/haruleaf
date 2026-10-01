@@ -63,7 +63,12 @@ export type MonthSnapshot = {
   fullyGrown: boolean;
 };
 
-export type HomeResponse = MonthSnapshot & { today: string; todayDiary: boolean };
+export type HomeResponse = MonthSnapshot & {
+  today: string;
+  todayDiary: boolean;
+  coinBalance: number;
+  attendedToday: boolean;
+};
 
 export type DiaryEntry = { date: string; body: string; createdAt: string; updatedAt: string };
 export type DiaryListResponse = { month: string; today: string; editable: boolean; diaries: DiaryEntry[] };

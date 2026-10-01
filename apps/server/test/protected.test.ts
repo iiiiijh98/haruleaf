@@ -31,6 +31,7 @@ describe('보호 라우트', () => {
     ['DELETE', '/me'],
     ['POST', '/auth/logout'],
     ['GET', '/home'],
+    ['POST', '/attendance'],
     ['GET', '/plants'],
     ['PUT', '/months/current/plant'],
     ['GET', '/diaries'],

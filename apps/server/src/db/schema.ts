@@ -187,7 +187,7 @@ export const coinTransactions = pgTable(
     unique('coin_transactions_once_per_reference').on(t.userId, t.type, t.referenceKey),
     check(
       'coin_transactions_amount_sign',
-      sql`(${t.type} = 'ATTENDANCE' and ${t.amount} > 0) or (${t.type} = 'PURCHASE' and ${t.amount} < 0)`,
+      sql`(${t.type} = 'ATTENDANCE' and ${t.amount} > 0) or (${t.type} = 'PURCHASE' and ${t.amount} < 0) or (${t.type} = 'ADJUSTMENT' and ${t.amount} > 0)`,
     ),
   ],
 );

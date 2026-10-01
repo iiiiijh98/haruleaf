@@ -7,6 +7,7 @@ import { AppError, registerErrorHandlers } from './lib/errors';
 import { authRoutes, logoutRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
 import { diaryRoutes } from './routes/diaries';
+import { coinRoutes } from './routes/coins';
 import { homeRoutes } from './routes/home';
 import { meRoutes } from './routes/me';
 import { protectedRoutes } from './routes/protected';
@@ -21,6 +22,7 @@ export type AppDeps = {
   db: Db;
   clock: Clock;
   corsOrigins: string[];
+  attendanceCoins?: number;
   logger?: boolean;
   logStream?: { write(message: string): void };
 };
@@ -57,7 +59,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(healthRoutes, { db: deps.db, clock: deps.clock });
 
   await app.register(authRoutes, { db: deps.db });
-  await app.register(protectedRoutes([logoutRoutes, meRoutes, homeRoutes, diaryRoutes]), { db: deps.db, clock: deps.clock });
+  await app.register(protectedRoutes([logoutRoutes, meRoutes, homeRoutes, diaryRoutes, coinRoutes]), {
+    db: deps.db,
+    clock: deps.clock,
+    attendanceCoins: deps.attendanceCoins ?? 5,
+  });
 
   return app;
 }

@@ -1,0 +1,2 @@
+ALTER TABLE "coin_transactions" DROP CONSTRAINT "coin_transactions_amount_sign";--> statement-breakpoint
+ALTER TABLE "coin_transactions" ADD CONSTRAINT "coin_transactions_amount_sign" CHECK (("coin_transactions"."type" = 'ATTENDANCE' and "coin_transactions"."amount" > 0) or ("coin_transactions"."type" = 'PURCHASE' and "coin_transactions"."amount" < 0) or ("coin_transactions"."type" = 'ADJUSTMENT' and "coin_transactions"."amount" > 0));

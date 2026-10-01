@@ -92,6 +92,15 @@ describe('users 제약', () => {
 });
 
 describe('coin_transactions 제약', () => {
+  it('ADJUSTMENT는 양수만', async () => {
+    const user = await createUser();
+    await db.insert(coinTransactions).values({ userId: user.id, type: 'ADJUSTMENT', amount: 10, referenceKey: 'adj:1' });
+    await expectPgError(
+      db.insert(coinTransactions).values({ userId: user.id, type: 'ADJUSTMENT', amount: -10, referenceKey: 'adj:2' }),
+      '23514',
+    );
+  });
+
   it('같은 날 출석은 한 번만', async () => {
     const user = await createUser();
     await db.insert(coinTransactions).values({ userId: user.id, type: 'ATTENDANCE', amount: 5, referenceKey: '2026-09-30' });

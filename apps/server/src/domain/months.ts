@@ -11,7 +11,7 @@ import {
 } from '@haruleaf/shared';
 import { and, asc, count, eq, gte, lt } from 'drizzle-orm';
 import type { Db, Executor, Tx } from '../db/client';
-import { diaries, monthlyRecords, plants, userPlants } from '../db/schema';
+import { coinTransactions, diaries, monthlyRecords, plants, userPlants, users } from '../db/schema';
 import type { Clock } from '../lib/clock';
 import { AppError } from '../lib/errors';
 
@@ -102,7 +102,19 @@ export async function homeFor(db: Db, userId: string, today: string): Promise<Ho
     .from(diaries)
     .where(and(eq(diaries.userId, userId), eq(diaries.diaryDate, today)))
     .limit(1);
-  return { ...snapshot, today, todayDiary: Boolean(todayRow) };
+  const [account] = await db.select({ coinBalance: users.coinBalance }).from(users).where(eq(users.id, userId)).limit(1);
+  const [attendance] = await db
+    .select({ id: coinTransactions.id })
+    .from(coinTransactions)
+    .where(and(eq(coinTransactions.userId, userId), eq(coinTransactions.type, 'ATTENDANCE'), eq(coinTransactions.referenceKey, today)))
+    .limit(1);
+  return {
+    ...snapshot,
+    today,
+    todayDiary: Boolean(todayRow),
+    coinBalance: account?.coinBalance ?? 0,
+    attendedToday: Boolean(attendance),
+  };
 }
 
 export function getHome(db: Db, userId: string, clock: Clock): Promise<HomeResponse> {

@@ -48,6 +48,8 @@ describe('GET /home', () => {
       growthStage: 1,
       fullyGrown: false,
       todayDiary: false,
+      coinBalance: 0,
+      attendedToday: false,
     });
   });
 

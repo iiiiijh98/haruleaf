@@ -10,6 +10,7 @@ const app = await buildApp({
   db,
   clock: systemClock(config.timeZone),
   corsOrigins: config.corsOrigins,
+  attendanceCoins: config.attendanceCoins,
   logger: true,
 });
 
