@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { ApiError } from '@/api/client';
 import { attendRequest } from '@/api/coins';
@@ -13,19 +14,23 @@ export function AttendanceCard({ coinBalance, attendedToday, onAttended }: Props
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // 탭은 마운트된 채 남으므로 화면을 떠나면 이전 오류 문구를 지운다.
+  useFocusEffect(useCallback(() => () => setMessage(null), []));
+
   async function attend() {
     if (pending || attendedToday) return;
     setPending(true);
     setMessage(null);
     try {
       await attendRequest();
+      onAttended(); // pending은 새 홈이 attendedToday로 그려질 때까지 유지
     } catch (error) {
-      if (!(error instanceof ApiError && error.code === 'ALREADY_ATTENDED')) {
-        setMessage(error instanceof ApiError ? error.message : '출석하지 못했어요.');
+      if (error instanceof ApiError && error.code === 'ALREADY_ATTENDED') {
+        onAttended();
+        return;
       }
-    } finally {
+      setMessage(error instanceof ApiError ? error.message : '출석하지 못했어요.');
       setPending(false);
-      onAttended();
     }
   }
 
@@ -40,7 +45,7 @@ export function AttendanceCard({ coinBalance, attendedToday, onAttended }: Props
             title={attendedToday ? '오늘 출석 완료' : '출석하기'}
             variant={attendedToday ? 'secondary' : 'primary'}
             onPress={() => void attend()}
-            loading={pending}
+            loading={pending && !attendedToday}
             disabled={attendedToday}
           />
         </View>
