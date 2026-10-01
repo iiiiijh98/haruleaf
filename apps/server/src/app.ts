@@ -4,10 +4,10 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { Db } from './db/client';
 import type { Clock } from './lib/clock';
 import { AppError, registerErrorHandlers } from './lib/errors';
-import { createRequireAuth } from './plugins/auth';
-import { authRoutes } from './routes/auth';
+import { authRoutes, logoutRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
 import { meRoutes } from './routes/me';
+import { protectedRoutes } from './routes/protected';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -54,9 +54,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   await app.register(healthRoutes, { db: deps.db, clock: deps.clock });
 
-  const requireAuth = createRequireAuth(deps.db);
-  await app.register(authRoutes, { db: deps.db, requireAuth });
-  await app.register(meRoutes, { db: deps.db, requireAuth });
+  await app.register(authRoutes, { db: deps.db });
+  await app.register(protectedRoutes([logoutRoutes, meRoutes]), { db: deps.db, clock: deps.clock });
 
   return app;
 }

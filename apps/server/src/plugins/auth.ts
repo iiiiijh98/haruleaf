@@ -20,8 +20,6 @@ export function createRequireAuth(db: Db) {
   };
 }
 
-export type RequireAuth = ReturnType<typeof createRequireAuth>;
-
 export function authOf(request: FastifyRequest): AuthContext {
   if (!request.auth) throw unauthorized();
   return request.auth;

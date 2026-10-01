@@ -50,6 +50,15 @@ describe('세션', () => {
     expect((await getMe(token)).statusCode).toBe(401);
   });
 
+  it('5분이 지나지 않았으면 last_used_at을 갱신하지 않는다', async () => {
+    const token = (await signupViaApi(app)).json().token as string;
+    const recent = new Date(Date.now() - 60_000);
+    await db.update(sessions).set({ lastUsedAt: recent });
+    await getMe(token);
+    const [session] = await db.select().from(sessions);
+    expect(session!.lastUsedAt.getTime()).toBe(recent.getTime());
+  });
+
   it('사용할 때마다 last_used_at을 갱신한다', async () => {
     const token = (await signupViaApi(app)).json().token as string;
     const old = new Date('2026-01-01T00:00:00Z');

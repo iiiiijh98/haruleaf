@@ -105,16 +105,21 @@ export async function login(db: Db, input: LoginInput, meta: ClientMeta, now = n
   });
 }
 
+/** 세션 사용 시각은 이 간격이 지났을 때만 갱신한다(요청마다 DB 쓰기 방지). */
+export const LAST_USED_REFRESH_MS = 5 * 60 * 1000;
+
 export async function authenticate(db: Db, token: string, now = new Date()): Promise<AuthContext | null> {
   const [row] = await db
-    .select({ sessionId: sessions.id, userId: users.id, loginId: users.loginId })
+    .select({ sessionId: sessions.id, userId: users.id, loginId: users.loginId, lastUsedAt: sessions.lastUsedAt })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
     .where(and(eq(sessions.tokenHash, hashToken(token)), isNull(sessions.revokedAt), gt(sessions.expiresAt, now)))
     .limit(1);
   if (!row) return null;
-  await db.update(sessions).set({ lastUsedAt: now }).where(eq(sessions.id, row.sessionId));
-  return row;
+  if (now.getTime() - row.lastUsedAt.getTime() >= LAST_USED_REFRESH_MS) {
+    await db.update(sessions).set({ lastUsedAt: now }).where(eq(sessions.id, row.sessionId));
+  }
+  return { sessionId: row.sessionId, userId: row.userId, loginId: row.loginId };
 }
 
 export async function logout(db: Db, auth: AuthContext, meta: ClientMeta, now = new Date()): Promise<void> {
