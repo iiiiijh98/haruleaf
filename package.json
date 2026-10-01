@@ -13,6 +13,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:server": "npm run dev -w @haruleaf/server",
     "dev:app": "npm run start -w @haruleaf/app",
+    "dev:grant-coins": "npm run grant-coins -w @haruleaf/server --",
     "test": "npm run test --workspaces --if-present && node --test scripts/*.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint -w @haruleaf/app",

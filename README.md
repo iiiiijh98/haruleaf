@@ -59,3 +59,11 @@ npm run db:generate -- --name <이름>                         # 스키마 변�
 테스트 DB `haruleaf_test`는 Docker 볼륨을 처음 만들 때만 생성된다(`docker/initdb`는 한 번만 실행). 오래된 볼륨에서 없다면 `docker exec haruleaf-db psql -U haruleaf -d haruleaf -c "CREATE DATABASE haruleaf_test OWNER haruleaf"`로 만든다.
 
 데이터를 완전히 지우려면 `docker compose down -v` (볼륨 삭제, 되돌릴 수 없음).
+
+### 시연용 코인 넣기
+
+출석은 하루 5코인이라 상점 구매(50·100코인)를 바로 보여주기 어렵다. 개발·시연 중에는 아래 명령으로 계정에 코인을 넣는다(원장에 `ADJUSTMENT`로 기록).
+
+```bash
+npm run dev:grant-coins -- <아이디> 100
+```
