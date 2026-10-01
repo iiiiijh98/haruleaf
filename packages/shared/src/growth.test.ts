@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FULL_GROWTH_PERCENT, growthPercent, growthStage, isFullyGrown } from './growth';
+import { FULL_GROWTH_PERCENT, formatGrowthPercent, growthPercent, growthStage, isFullyGrown } from './growth';
 
 describe('growthPercent', () => {
   it('해당 월 전체 일수를 분모로 쓴다', () => {
@@ -55,5 +55,17 @@ describe('isFullyGrown', () => {
     expect(isFullyGrown(growthPercent(24, 31))).toBe(false);
     expect(isFullyGrown(growthPercent(25, 31))).toBe(true);
     expect(isFullyGrown(growthPercent(24, 30))).toBe(true);
+  });
+});
+
+describe('formatGrowthPercent', () => {
+  it.each([
+    [0, '0.0'],
+    [100 / 31, '3.2'],
+    [(24 / 31) * 100, '77.4'],
+    [(25 / 31) * 100, '80.6'],
+    [100, '100.0'],
+  ])('%s → %s', (percent, expected) => {
+    expect(formatGrowthPercent(percent)).toBe(expected);
   });
 });

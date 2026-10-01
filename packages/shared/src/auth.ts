@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FORM_MESSAGE, hasNoNul, INVALID_CHARACTER_MESSAGE } from './text';
 
 export const LOGIN_ID_MESSAGE = '아이디는 영문 소문자·숫자·_ 3~20자로 입력해주세요.';
 export const PASSWORD_LENGTH_MESSAGE = '비밀번호는 8~64자로 입력해주세요.';
@@ -7,7 +8,6 @@ export const PASSWORD_MIX_MESSAGE = '비밀번호에 대문자·숫자·특수�
 export const NICKNAME_MESSAGE = '닉네임은 1~10자로 입력해주세요.';
 export const PASSWORD_RULE_HELP = '8~64자, 대문자·숫자·특수문자를 각각 1자 이상 넣어주세요.';
 
-const FORM_MESSAGE = '입력값을 확인해주세요.';
 const PASSWORD_REQUIRED = '비밀번호를 입력해주세요.';
 
 export const loginIdSchema = z
@@ -32,7 +32,8 @@ export const nicknameSchema = z
   .refine((value) => {
     const length = Array.from(value).length;
     return length >= 1 && length <= 10;
-  }, NICKNAME_MESSAGE);
+  }, NICKNAME_MESSAGE)
+  .refine(hasNoNul, INVALID_CHARACTER_MESSAGE);
 
 const passwordInput = z
   .string({ error: PASSWORD_REQUIRED })

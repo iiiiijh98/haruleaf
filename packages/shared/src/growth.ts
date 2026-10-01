@@ -25,3 +25,8 @@ export function growthStage(percent: number): GrowthStage {
 export function isFullyGrown(percent: number): boolean {
   return percent >= FULL_GROWTH_PERCENT;
 }
+
+/** 화면 표시용 성장률(소수점 첫째 자리, BR-05). 단계 판정에는 쓰지 않는다. */
+export function formatGrowthPercent(percent: number): string {
+  return (Math.round(percent * 10) / 10).toFixed(1);
+}

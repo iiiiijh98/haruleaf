@@ -61,6 +61,10 @@ describe('nicknameSchema', () => {
   it.each(['', '   '])('빈 값 %j 거절', (value) => {
     expect(firstMessage(nicknameSchema.safeParse(value))).toBe(NICKNAME_MESSAGE);
   });
+
+  it('NUL 문자 거절', () => {
+    expect(firstMessage(nicknameSchema.safeParse('진\u0000화'))).toBe('사용할 수 없는 문자가 들어 있어요.');
+  });
 });
 
 describe('폼 스키마', () => {

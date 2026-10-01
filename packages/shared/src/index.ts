@@ -6,3 +6,5 @@ export * from './growth';
 export * from './platform';
 export * from './auth';
 export * from './validation';
+export * from './diary';
+export * from './text';
