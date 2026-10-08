@@ -1,0 +1,18 @@
+# 이미지에 넣지 않는 것: 의존성(이미지 안에서 새로 설치), 비밀값, 개발·문서 파일
+**/node_modules
+.env
+.env.*
+!.env.example
+!.env.prod.example
+.git
+.claude
+.superpowers
+.playwright-mcp
+.idea
+**/.expo
+**/dist
+docs
+apps/app/assets
+apps/app/src
+apps/server/test
+**/*.test.ts

@@ -77,3 +77,25 @@ npm run dev:seed-month -- <아이디> 2026-09 rose 25
 ```
 
 이번 달·미래 달, 이미 마감된 달, 보유하지 않은 식물은 거절한다.
+
+## 운영 배포 (EC2, Docker)
+
+API 서버와 PostgreSQL을 `docker-compose.prod.yml`로 함께 띄운다. 개발용 `docker-compose.yml`과는 프로젝트 이름·볼륨이 따로다.
+
+```bash
+git clone <저장소 주소> haruleaf && cd haruleaf
+cp .env.prod.example .env && chmod 600 .env && vi .env   # 값 채우기(파일 안 설명 참고)
+docker compose -f docker-compose.prod.yml up -d --build
+curl -H 'x-client-platform: web' http://localhost:4000/health   # {"status":"ok","db":"ok",...}
+```
+
+- 컨테이너가 뜰 때마다 마이그레이션과 식물 카탈로그 반영을 자동으로 한다.
+- DB는 호스트 포트를 열지 않는다. backend만 compose 내부망(`db:5432`)으로 접속한다.
+- 업데이트: `git pull && docker compose -f docker-compose.prod.yml up -d --build`
+- 로그: `docker compose -f docker-compose.prod.yml logs -f backend`
+- 시연 명령(운영 DB에 바로 반영되니 주의):
+  ```bash
+  docker compose -f docker-compose.prod.yml exec backend /app/node_modules/.bin/tsx src/scripts/grant-coins.ts <아이디> 100
+  docker compose -f docker-compose.prod.yml exec backend /app/node_modules/.bin/tsx src/scripts/seed-month.ts <아이디> 2026-09 rose 25
+  ```
+- 앱은 빌드할 때 `EXPO_PUBLIC_API_URL=http://<EC2 주소>:<HARULEAF_BACKEND_HOST_PORT>`로 이 서버를 가리키게 한다.
