@@ -98,4 +98,5 @@ curl -H 'x-client-platform: web' http://localhost:4000/health   # {"status":"ok"
   docker compose -f docker-compose.prod.yml exec backend /app/node_modules/.bin/tsx src/scripts/grant-coins.ts <아이디> 100
   docker compose -f docker-compose.prod.yml exec backend /app/node_modules/.bin/tsx src/scripts/seed-month.ts <아이디> 2026-09 rose 25
   ```
-- 앱은 빌드할 때 `EXPO_PUBLIC_API_URL=http://<EC2 주소>:<HARULEAF_BACKEND_HOST_PORT>`로 이 서버를 가리키게 한다.
+- 운영 API 주소는 `https://haruleaf.iliasai.com`이다. 앱의 운영 빌드(`expo export`, EAS build)는 `apps/app/.env.production`에서 이 주소를 읽는다. 개발(`npm run dev`)은 그대로 맥북 서버를 쓴다.
+- Web 화면을 다른 도메인에 올리면 그 주소를 서버 `.env`의 `HARULEAF_CORS_ORIGINS`에 넣어야 브라우저에서 API를 호출할 수 있다.
